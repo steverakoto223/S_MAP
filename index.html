@@ -1,0 +1,222 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>S-Map</title>
+    <link rel="shortcut icon" href="smap.png">
+    <!-- implementation des CSS -->
+    <link rel="stylesheet" href="leaflet/leaflet.css" />
+    <link rel="stylesheet" href="leaflet/geocoder/Control.Geocoder.css" />
+    <link rel="stylesheet" href="leaflet/routing/leaflet-routing-machine.css" />
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/4.7.0/css/font-awesome.min.css">
+
+    <link rel="stylesheet" type="text/css" href="map.css">
+</head>
+
+<body>
+    <!-- affichage de la map -->
+    <div id="map"></div>
+    <div class="logo-container">
+        <img src="ispm.jpg" alt="Your Logo" width="100">
+    </div>
+</body>
+
+</html>
+<!-- implementation des api -->
+<script src="leaflet/leaflet.js"></script>
+<script src="leaflet/geocoder/Control.Geocoder.js"></script>
+<script src="leaflet/routing/leaflet-routing-maching.js"></script>
+<script src="leaflet/locate/locate.js"></script>
+
+<script>
+    // initialisation de la map et la vue
+    var map = L.map('map').setView([-18.8792, 47.5079], 13);
+
+    // map type openstreet
+    var osm = L.tileLayer('https://tile.openstreetmap.org/{z}/{x}/{y}.png', {
+        attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
+    });
+
+    // map type vue satellite
+    var googleSat = L.tileLayer('http://{s}.google.com/vt/lyrs=s&x={x}&y={y}&z={z}', {
+        maxZoom: 20,
+        subdomains: ['mt0', 'mt1', 'mt2', 'mt3']
+    });
+
+    // map type vue street
+    var googleStreets = L.tileLayer('http://{s}.google.com/vt/lyrs=m&x={x}&y={y}&z={z}', {
+        maxZoom: 20,
+        subdomains: ['mt0', 'mt1', 'mt2', 'mt3']
+    });
+
+    // map type vue terrain
+    var googleTerrain = L.tileLayer('http://{s}.google.com/vt/lyrs=p&x={x}&y={y}&z={z}', {
+        maxZoom: 20,
+        subdomains: ['mt0', 'mt1', 'mt2', 'mt3']
+    });
+
+    // type par défaut
+    osm.addTo(map);
+
+    // initialisation des types de map à afficher
+    var baseMaps = {
+        "OpenStreetMap": osm,
+        "Satellite": googleSat,
+        "Street": googleStreets,
+        "Terrain": googleTerrain,
+    };
+
+    var roadsLayer = L.layerGroup([]); // Initialize an empty layer group
+
+    var overlayMaps = {
+        // "Cities": cities
+        // "Roads": roadsLayer // Make sure you define 'roadsLayer' before using it
+    };
+
+    // implementation choix vue sur la map
+    var layerControl = L.control.layers(baseMaps, overlayMaps).addTo(map);
+
+    var lc = L.control.locate({
+        icon: 'fa fa-location-arrow',
+        position: 'topleft',  // Change the position of the control
+        drawCircle: true,    // Show a circle that indicates the accuracy of the location
+        follow: true,        // Automatically follow the user's location on the map
+        setView: 'untilPan', // Keep the user's location in the center until manual panning
+        enableHighAccuracy: true
+    });
+    lc.addTo(map);
+
+
+
+    // implementation recherche sur la map
+    var searchControl = L.Control.geocoder({
+        defaultMarkGeocode: false,
+        geocoder: L.Control.Geocoder.nominatim()
+    }).addTo(map);
+
+    // centrer la map sur le resultat de la recherche
+    searchControl.on('markgeocode', function (e) {
+        var result = e.geocode || e.originalEvent.geocode;
+        if (result && result.center) {
+            map.setView(result.center, 17); // ajuster la vue sur la recherche
+        }
+    });
+
+    // 
+    var routingControl = L.Routing.control({
+        waypoints: [], // Initialize with an empty list of waypoints
+        routeWhileDragging: true,
+        geocoder: L.Control.Geocoder.nominatim(),
+        // show:false,
+    }).addTo(map);
+
+    routingControl.on('routesfound', function (e) {
+        var routes = e.routes;
+        if (routes.length > 0) {
+            var route = routes[0];
+            var time = route.summary.totalTime; // Total time in seconds
+            var distance = route.summary.totalDistance; // Total distance in meters
+            alert("Time: " + (time / 3600).toFixed(2) + " hours, Distance: " + (distance / 1000).toFixed(2) + " kilometers");
+        }
+    });
+
+    // map.on('click', function(e) {
+    //     routingControl.spliceWaypoints(routingControl.getWaypoints().length - 1, 1, e.latlng);
+    // });
+    map.on('click', function (e) {
+        var clickedLocation = e.latlng;
+
+        L.Control.Geocoder.nominatim().reverse(e.latlng, map.options.crs.scale(map.getZoom()), function (results) {
+            var address = (results && results[0].name) || 'Unknown location';
+            alert('You clicked on: ' + address);
+
+            var radiusInMeters = 1000; // 1 km
+            var bounds = L.latLngBounds(clickedLocation.toBounds(radiusInMeters));
+
+            // Query your data source to find pharmacies within the bounding box or radius.
+
+            // Assuming 'pharmacies' is an array of pharmacy locations
+            var pharmacies = [
+                //  { name: 'Pharmacy 1', lat: -18.8765, lng: 47.5043 },
+                //  { name: 'Pharmacy 2', lat: -18.8807, lng: 47.5082 },
+                // Add more pharmacy locations as needed
+            ];
+
+            pharmacies.forEach(function (pharmacy) {
+                var pharmacyMarker = L.marker([pharmacy.lat, pharmacy.lng]).addTo(map);
+                pharmacyMarker.bindPopup(pharmacy.name); // Display the pharmacy name as a popup
+            });
+        });
+    });
+
+    document.getElementById("remove-waypoint").addEventListener("click", function () {
+        var waypoints = routingControl.getWaypoints();
+        if (waypoints.length > 1) {
+            // Remove the last waypoint
+            routingControl.spliceWaypoints(waypoints.length - 1, 1);
+        }
+    });
+
+    // Add the remove waypoint button to the map
+    var waypointContainer = L.DomUtil.create('div', 'leaflet-routing-geocoders');
+
+    // Create a button to remove the last waypoint
+    var removeWaypointButton = L.easyButton('fa-minus', function () {
+        var waypoints = routingControl.getWaypoints();
+        if (waypoints.length > 2) {
+            routingControl.spliceWaypoints(waypoints.length - 2, 1); // Remove the second-to-last waypoint
+            updateWaypointDisplay();
+            // Save the updated waypoints in localStorage
+            localStorage.setItem('routingWaypoints', JSON.stringify(waypoints));
+        }
+    });
+
+    // Check if there are saved waypoints in localStorage and restore them
+    var savedWaypoints = localStorage.getItem('routingWaypoints');
+    if (savedWaypoints) {
+        savedWaypoints = JSON.parse(savedWaypoints);
+        savedWaypoints.forEach(function (waypoint) {
+            routingControl.spliceWaypoints(routingControl.getWaypoints().length - 1, 0, waypoint.latLng, waypoint.name);
+        });
+        updateWaypointDisplay();
+    }
+
+
+    // Function to update the display of waypoints
+    function updateWaypointDisplay() {
+        var waypoints = routingControl.getWaypoints();
+        waypointContainer.innerHTML = ''; // Clear the container
+
+        waypoints.forEach(function (waypoint, index) {
+            var marker = L.DomUtil.create('div', 'leaflet-routing-geocoder-item', waypointContainer);
+            marker.innerHTML = waypoint.name;
+
+            // Create event listener to remove waypoints when clicked
+            marker.addEventListener('click', function () {
+                if (index > 0 && index < waypoints.length - 1) {
+                    routingControl.spliceWaypoints(index, 1);
+                    updateWaypointDisplay();
+                }
+            });
+        });
+    }
+
+    // Add the custom container to the map
+    map.getContainer().appendChild(waypointContainer);
+
+    // Customize the behavior when a route is added or removed
+    routingControl.on('routeselected', function (e) {
+        removeWaypointButton.enable();
+        updateWaypointDisplay();
+    });
+
+    routingControl.on('waypointremoved', function (e) {
+        if (routingControl.getWaypoints().length <= 2) {
+            removeWaypointButton.disable();
+            waypointContainer.innerHTML = ''; // Clear the container when there are no waypoints
+        }
+    });
+
+</script>

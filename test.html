@@ -1,0 +1,49 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Leaflet Map with Local MVT Tiles</title>
+    <link rel="stylesheet" href="leaflet/leaflet.css"/>
+    <script src="leaflet/leaflet.js"></script>
+    <script src="map/Leaflet-js/osmtogeojson.js"></script>
+</head>
+<body>
+    <div id="map" style="width: 100%; height: 600px;"></div>
+
+    <script src="main.js"></script>
+</body>
+</html>
+
+<!-- <body>
+    <div id='map'></div>
+
+    <script>
+        var map = new mapboxgl.Map({
+            container: 'map',
+            style: {
+                'version': 8,
+                'sources': {
+                    'madagascar': {
+                        'type': 'vector',
+                        'tiles': ['map/osm-2020-02-10-v3.11_africa_madagascar.mbtiles'], // Path to your MBTiles file.
+                        'maxzoom': 14 // Adjust as needed.
+                    }
+                },
+                'layers': [
+                    {
+                        'id': 'madagascar-layer',
+                        'type': 'fill',
+                        'source': 'madagascar',
+                        'source-layer': 'open street map', // Replace with your source layer name.
+                        'paint': {
+                            'fill-color': '#0080FF', // Adjust the fill color.
+                            'fill-opacity': 0.6
+                        }
+                    }
+                ]
+            },
+            center: [47.5079, -18.8792], // Set the initial coordinates.
+            zoom: 6 // Adjust the zoom level.
+        });
+    </script>
+</body> -->
+</html> 
